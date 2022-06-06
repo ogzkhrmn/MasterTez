@@ -18,10 +18,10 @@ def compute_mean_std(engine, batch):
 
 data = dataset.fit_data("alltrue.csv")
 length = data.__len__()
-channel_size = 13
+channel_size = 12
 n_inputs = len(data.columns) - 1
 
-lstm1 = torch.load('alllstm.model')
+lstm1 = torch.load("mlmodels/10-10mae.model")
 lstm1.eval()
 
 
@@ -32,8 +32,7 @@ for key in data_groups.groups.keys():
     data = data_groups.get_group(key)
     data_last = data.drop(columns={"clientid"})
     x_train, y_train = dataset.get_data(data_last, n_inputs, channel_size)
-    X_train_tensors = Variable(torch.Tensor(x_train).cuda())
-    X_train_tensors_final = torch.reshape(X_train_tensors, (X_train_tensors.shape[0], 1, X_train_tensors.shape[1]))
+    X_train_tensors_final = torch.reshape(x_train, (x_train.shape[0], 1, x_train.shape[1]))
     outputs = lstm1(X_train_tensors_final)
     predict = np.array(outputs.cpu().data.numpy())
     true = np.array(y_train)
@@ -55,10 +54,10 @@ amin, amax = min(effect), max(effect)
 for i, val in enumerate(effect):
     effect[i] = (val - amin) / (amax - amin)
 
-x = ['kanal1', 'kanal2', 'kanal3', 'kanal1', 'kanal5']
+x = ['kanal1', 'kanal2', 'kanal3', 'kanal4', 'kanal5']
 x_pos = [i for i, _ in enumerate(x)]
 plt.bar(x_pos, np.asarray(effect))
 plt.xticks(x_pos, x)
-plt.xlabel("Reklam Kanalları")
-plt.ylabel("Kanal Etkisi")
+plt.xlabel("Reklam Kanalları", fontsize=15)
+plt.ylabel("Kanal Etkisi",  fontsize=15)
 plt.show()

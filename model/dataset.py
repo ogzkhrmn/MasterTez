@@ -1,5 +1,10 @@
 import pandas as pd
+import torch
 from sklearn.preprocessing import StandardScaler
+
+from autoencoder.RecurrentAutoencoder import RecurrentAutoencoder
+
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 
 def fit_data(filename):
@@ -10,7 +15,6 @@ def fit_data(filename):
 
     data = pd.concat(mylist, axis=0)
     del mylist
-
 
     data["bought"].replace({"f": 0, "t": 1}, inplace=True)
 
@@ -45,13 +49,22 @@ def fit_data(filename):
         "viewportpixelheight", "viewportpixelwidth", "screenx", "screeny", "pagex", "pagey", "screenpixelheight",
         "screenpixelwidth"]])
 
-    data.insert(len(data.columns) - 1, 'bought', data.pop('bought'))
-
     data.fillna(data.median(numeric_only=True), inplace=True)
     return data
 
 
 def get_data(data_frame, n_inputs, channel_size):
+    y = data_frame.iloc[:, (n_inputs - channel_size):n_inputs]
+    x = data_frame.iloc[:, :-1 * channel_size]
+    ss = StandardScaler()
+    x_ss = ss.fit_transform(x)
+    num_rows, num_cols = x_ss.shape
+    ae = RecurrentAutoencoder(input_shape=num_cols)
+    ae.to(device)
+    result = ae.forward(torch.from_numpy(x_ss).float().cuda())
+    return result, y
+
+def get_normal_data(data_frame, n_inputs, channel_size):
     y = data_frame.iloc[:, (n_inputs - channel_size):n_inputs]
     x = data_frame.iloc[:, :-1 * channel_size]
     ss = StandardScaler()

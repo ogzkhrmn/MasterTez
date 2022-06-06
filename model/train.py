@@ -19,8 +19,8 @@ def compute_mean_std(engine, batch):
 
 data = dataset.fit_data("all.csv")
 length = data.__len__()
-channel_size = 13
-num_epochs = 10
+channel_size = 12
+num_epochs = 5
 
 learning_rate = 0.001  # 0.001 lr
 hidden_size = 10  # number of features in hidden state
@@ -49,16 +49,15 @@ for epoch in range(num_epochs):
         y_copy = y_train.copy()
         if y_train.iloc[0][channel_size - 1] == 0:
             y_copy.loc[:, :] = 0
-        X_train_tensors = Variable(torch.Tensor(x_train).cuda())
         y_train_tensors = Variable(torch.Tensor(y_train.to_numpy()).cuda())
-        X_train_tensors_final = torch.reshape(X_train_tensors, (X_train_tensors.shape[0], 1, X_train_tensors.shape[1]))
+        X_train_tensors_final = torch.reshape(x_train, (x_train.shape[0], 1, x_train.shape[1]))
         outputs = lstm1.forward(X_train_tensors_final)
         optimizer.zero_grad()
         loss = criterion(outputs, y_train_tensors)
         loss.backward()
         optimizer.step()
 
-torch.save(lstm1, "alllstm.model")
+torch.save(lstm1, "mlmodels/all5ae.model")
 
 lstm1.eval()
 data_groups = test.groupby('clientid')
@@ -70,8 +69,7 @@ for key in data_groups.groups.keys():
     data = data_groups.get_group(key)
     data_last = data.drop(columns={"clientid"})
     x_train, y_train = dataset.get_data(data_last, n_inputs, channel_size)
-    X_train_tensors = Variable(torch.Tensor(x_train).cuda())
-    X_train_tensors_final = torch.reshape(X_train_tensors, (X_train_tensors.shape[0], 1, X_train_tensors.shape[1]))
+    X_train_tensors_final = torch.reshape(x_train, (x_train.shape[0], 1, x_train.shape[1]))
     outputs = lstm1(X_train_tensors_final)
     predict = np.array(outputs.cpu().data.numpy())
     true = np.array(y_train)
@@ -81,14 +79,5 @@ for key in data_groups.groups.keys():
         auc_score = roc_auc_score(y_true, y_pred)
         auc_last += auc_score
         times += 1
-        y_plot = y_pred[[0, 2, 6, 7, 8]]
-        effect[0] = effect[0] + y_plot[0]
-        effect[1] = effect[1] + y_plot[1]
-        effect[2] = effect[2] + y_plot[2]
-        effect[3] = effect[3] + y_plot[3]
-        effect[4] = effect[4] + y_plot[4]
-        # if auc_score < 0.80:
-        #     print(y_true)
-        #     print(y_pred)
 
 print("Auc Score: ", auc_last / times)
